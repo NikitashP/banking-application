@@ -7,7 +7,15 @@ public class Account {
 
     private final UUID id;
 
-    private final BigDecimal balance;
+    private BigDecimal balance;
+
+    @Override
+    public String toString() {
+        return "Account{" +
+                "id=" + id +
+                ", balance=" + balance +
+                '}';
+    }
 
     Account() {
         this.id = UUID.randomUUID();
@@ -20,5 +28,13 @@ public class Account {
 
     public BigDecimal getBalance() {
         return balance;
+    }
+
+    public void credit(BigDecimal amount){
+        balance=balance.add(amount);
+    }
+
+    public void debit(BigDecimal amount){
+        balance=balance.subtract(amount);
     }
 }

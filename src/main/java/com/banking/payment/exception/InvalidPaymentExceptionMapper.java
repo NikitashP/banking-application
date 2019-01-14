@@ -5,9 +5,9 @@ import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
 @Provider
-public class InvalidPaymentAmountExceptionMapper implements ExceptionMapper<InvalidPaymentAmountException> {
+public class InvalidPaymentExceptionMapper implements ExceptionMapper<InvalidPaymentException> {
     @Override
-    public Response toResponse(InvalidPaymentAmountException e) {
+    public Response toResponse(InvalidPaymentException e) {
         return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
     }
 }

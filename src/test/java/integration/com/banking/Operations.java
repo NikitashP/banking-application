@@ -1,6 +1,7 @@
 package integration.com.banking;
 
 import com.banking.Application;
+import com.banking.payment.repository.PaymentStatus;
 import org.glassfish.grizzly.http.server.HttpServer;
 import org.junit.After;
 import org.junit.Before;
@@ -13,134 +14,227 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
 import java.util.UUID;
 
-import static javax.ws.rs.core.Response.Status.*;
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static javax.ws.rs.core.Response.Status.CREATED;
+import static javax.ws.rs.core.Response.Status.OK;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class Operations {
 
+  private HttpServer server;
+  private WebTarget target;
 
-    private HttpServer server;
-    private WebTarget target;
+  @Before
+  public void setUp() {
+    server = Application.startServer();
+    Client c = ClientBuilder.newClient();
+    target = c.target(Application.BASE_URI);
+  }
 
-    @Before
-    public void setUp() {
-        server = Application.startServer();
-        Client c = ClientBuilder.newClient();
-        target = c.target(Application.BASE_URI);
-    }
+  @After
+  public void tearDown() {
+    server.shutdownNow();
+  }
 
-    @After
-    public void tearDown() {
-        server.shutdownNow();
-    }
+  @Test
+  public void shouldReturnCreatedStatusOnAccountCreation() {
+    UUID accountId = createAccount();
+    assertNotNull(accountId);
+  }
 
+  @Test
+  public void shouldReturnErrorMessageWhenAccountDoesNotExist() {
 
-    @Test
-    public void shouldReturnCreatedStatusOnAccountCreation() {
-        UUID accountId = createAccount();
-        assertNotNull(accountId);
-    }
+    String accountId = UUID.randomUUID().toString();
+    Response response =
+        target.path("accounts/").path(accountId).path("/balance").request().method("GET");
 
+    assertEquals(BAD_REQUEST.getStatusCode(), response.getStatus());
+    String accountNotFoundExceptionMessage = response.readEntity(String.class);
+    assertEquals("Account " + accountId + " not found", accountNotFoundExceptionMessage);
+  }
 
-    @Test
-    public void shouldReturnErrorMessageWhenAccountDoesNotExist() {
+  @Test
+  public void shouldReturnAccountBalanceWhenAccountExists() {
 
-        String accountId = UUID.randomUUID().toString();
-        Response response = target.path("accounts/")
-                .path(accountId)
-                .path("/balance")
-                .request()
-                .method("GET");
+    UUID accountId = createAccount();
 
-        assertEquals(BAD_REQUEST.getStatusCode(), response.getStatus());
-        String accountNotFoundExceptionMessage = response.readEntity(String.class);
-        assertEquals("Account " + accountId + " not found", accountNotFoundExceptionMessage);
-    }
+    Response response = getAccountBalance(accountId);
 
-
-    @Test
-    public void shouldReturnAccountBalanceWhenAccountExists() {
-
-        UUID accountId = createAccount();
-
-        Response response = target.path("accounts/")
-                .path(accountId.toString())
-                .path("/balance")
-                .request()
-                .method("GET");
-
-        assertEquals(OK.getStatusCode(), response.getStatus());
-        assertEquals("Initial balance is Zero", "0", response.readEntity(String.class));
-
-    }
+    assertEquals(OK.getStatusCode(), response.getStatus());
+    assertEquals("Initial balance is Zero", "0", response.readEntity(String.class));
+  }
 
 
-    @Test
-    public void shouldReturnErrorMessageWhenPaymentIsMadeAgainstInvalidPayeeAccount() {
+  @Test
+  public void shouldReturnErrorMessageWhenPaymentIsMadeAgainstInvalidPayeeAccount() {
+
+    UUID beneficiaryAccountId = createAccount();
+
+    Response response = createFundTransferPayment(UUID.randomUUID(), beneficiaryAccountId, 20);
+
+    assertEquals(CREATED.getStatusCode(), response.getStatus());
+
+    final UUID paymentOrderID = response.readEntity(UUID.class);
+
+    final PaymentClientResponse payment = getPaymentInformation(paymentOrderID);
+
+    assertEquals(PaymentStatus.REJECTED, payment.getStatus());
+
+    assertEquals("Initiated - Payee account is Invalid",payment.getMessage());
+
+  }
+
+  @Test
+  public void shouldReturnErrorMessageWhenPaymentIsMadeAgainstInvalidBeneficiaryAccount() {
+
+    UUID payeeAccountId = createAccount();
+
+    Response response = createFundTransferPayment(payeeAccountId, UUID.randomUUID(), 20);
+
+    assertEquals(CREATED.getStatusCode(), response.getStatus());
+
+    final UUID paymentId = response.readEntity(UUID.class);
+
+    final PaymentClientResponse payment = getPaymentInformation(paymentId);
+
+    assertEquals(PaymentStatus.REJECTED, payment.getStatus());
+
+    assertEquals("Initiated - Beneficiary account is Invalid",payment.getMessage());
+  }
+
+  @Test
+  public void
+      shouldReturnErrorMessageWhenPaymentIsMadeAgainstPayeeAccountWithInsufficientBalance() {
+
+    UUID payeeAccountId = createAccount();
+
+    UUID beneficiaryAccountId = createAccount();
+
+    Response response = createFundTransferPayment(payeeAccountId, beneficiaryAccountId, 20);
+
+    assertEquals(CREATED.getStatusCode(), response.getStatus());
+
+    final UUID paymentId = response.readEntity(UUID.class);
+
+    final PaymentClientResponse payment = getPaymentInformation(paymentId);
+
+    assertEquals(PaymentStatus.REJECTED, payment.getStatus());
+
+    assertEquals("Initiated - Payment Order Declined, Insufficient Balance",payment.getMessage());
+  }
+
+  @Test
+  public void shouldReturnErrorMessageWhenPaymentIsWithInvalidAmount() {
+
+    UUID payeeAccountId = createAccount();
+
+    UUID beneficiaryAccountId = createAccount();
+
+    Response response = createFundTransferPayment(payeeAccountId, beneficiaryAccountId, -20);
+
+    assertEquals(CREATED.getStatusCode(), response.getStatus());
+
+    final UUID paymentId = response.readEntity(UUID.class);
+
+    final PaymentClientResponse payment = getPaymentInformation(paymentId);
+
+    assertEquals(PaymentStatus.REJECTED, payment.getStatus());
+
+    assertEquals("Initiated - Payment Order Amount must be Positive and Greater than Zero",payment.getMessage());
+  }
+
+  @Test
+  public void shouldRespondWithProperBalanceWhenPaymentIsValid() {
+
+    UUID payeeAccountId = createAccount();
+
+    UUID beneficiaryAccountId = createAccount();
+
+    final Response creditPaymentResponse = createCreditPayment(payeeAccountId, 20);
+
+    final UUID creditPaymentId = creditPaymentResponse.readEntity(UUID.class);
+
+    assertEquals(CREATED.getStatusCode(), creditPaymentResponse.getStatus());
+
+    final PaymentClientResponse creditPayment = getPaymentInformation(creditPaymentId);
+
+    assertEquals(PaymentStatus.SUCCESS, creditPayment.getStatus());
+
+    final Response accountBalanceResponse = getAccountBalance(payeeAccountId);
+
+    final Integer integer = accountBalanceResponse.readEntity(Integer.class);
+
+    assertTrue(integer > 0);
+
+    Response fundTransferPaymentResponse = createFundTransferPayment(payeeAccountId, beneficiaryAccountId, 20);
+
+    assertEquals(CREATED.getStatusCode(), fundTransferPaymentResponse.getStatus());
+
+    final UUID fundTransferPaymentId = fundTransferPaymentResponse.readEntity(UUID.class);
+
+    final PaymentClientResponse payment = getPaymentInformation(fundTransferPaymentId);
+
+    assertEquals(PaymentStatus.SUCCESS, payment.getStatus());
+
+    assertEquals("Initiated - Processed successfully",payment.getMessage());
+  }
 
 
-        Response response = target.path("payments/")
-                .path("/transfer")
-                .request()
-                .post(Entity.json("{\"payeeAccountId\":\"" + UUID.randomUUID().toString() + "\",\"beneficiaryAccountId\":\"" + UUID.randomUUID().toString() + "\",\"amount\":20}"));
+  private UUID createAccount() {
+    Response response = target.path("accounts/").request().method("POST");
 
-        assertEquals(BAD_REQUEST.getStatusCode(), response.getStatus());
-    }
+    assertEquals(CREATED.getStatusCode(), response.getStatus());
+    return response.readEntity(UUID.class);
+  }
+
+  private PaymentClientResponse getPaymentInformation(UUID paymentOrderID) {
+    Response response;
+    response = target.path("payments/").path(paymentOrderID.toString()).request().get();
+    assertEquals(OK.getStatusCode(), response.getStatus());
+
+    return response.readEntity(PaymentClientResponse.class);
+  }
+
+  private Response createFundTransferPayment(UUID payeeAccountId, UUID beneficiaryAccountId, int amount) {
+    return target
+        .path("payments/")
+        .path("/transfer")
+        .request()
+        .post(
+            Entity.json(
+                "{\"payeeAccountId\":\""
+                    + payeeAccountId.toString()
+                    + "\",\"beneficiaryAccountId\":\""
+                    + beneficiaryAccountId.toString()
+                    + "\",\"amount\":"
+                    + amount
+                    + "}"));
+  }
+
+  private Response createCreditPayment(UUID beneficiaryAccountId, int amount) {
+    return target
+        .path("payments/")
+        .path("/credit")
+        .request()
+        .post(
+            Entity.json(
+                "{\"beneficiaryAccountId\":\""
+                    + beneficiaryAccountId.toString()
+                    + "\",\"amount\":"
+                    + amount
+                    + "}"));
+  }
 
 
-    @Test
-    public void shouldReturnErrorMessageWhenPaymentIsMadeAgainstInvalidBeneficiaryAccount() {
-
-        UUID payeeAccountId = createAccount();
-
-        Response response = target.path("payments/")
-                .path("/transfer")
-                .request()
-                .post(Entity.json("{\"payeeAccountId\":\"" + payeeAccountId.toString() + "\",\"beneficiaryAccountId\":\"" + UUID.randomUUID().toString() + "\",\"amount\":20}"));
-
-        assertEquals(BAD_REQUEST.getStatusCode(), response.getStatus());
-    }
-
-    @Test
-    public void shouldReturnErrorMessageWhenPaymentIsMadeAgainstPayeeAccountWithInsufficientBalance() {
-
-        UUID payeeAccountId = createAccount();
-
-        UUID beneficiaryAccountId = createAccount();
-
-        Response response = target.path("payments/")
-                .path("/transfer")
-                .request()
-                .post(Entity.json("{\"payeeAccountId\":\"" + payeeAccountId.toString() + "\",\"beneficiaryAccountId\":\"" + beneficiaryAccountId.toString() + "\",\"amount\":20}"));
-
-        assertEquals(BAD_REQUEST.getStatusCode(), response.getStatus());
-        assertEquals("Insufficient Balance for account " + payeeAccountId.toString(), response.readEntity(String.class));
-    }
-
-
-    @Test
-    public void shouldReturnErrorMessageWhenPaymentIsWithInvalidAmount() {
-
-        UUID payeeAccountId = createAccount();
-
-        UUID beneficiaryAccountId = createAccount();
-
-        Response response = target.path("payments/")
-                .path("/transfer")
-                .request()
-                .post(Entity.json("{\"payeeAccountId\":\"" + payeeAccountId.toString() + "\",\"beneficiaryAccountId\":\"" + beneficiaryAccountId.toString() + "\",\"amount\":-20}"));
-
-        assertEquals(BAD_REQUEST.getStatusCode(), response.getStatus());
-        assertEquals("Amount should be non-negative", response.readEntity(String.class));
-    }
-
-    private UUID createAccount() {
-        Response response = target.path("accounts/")
-                .request()
-                .method("POST");
-
-        assertEquals(CREATED.getStatusCode(), response.getStatus());
-        return response.readEntity(UUID.class);
-    }
+  private Response getAccountBalance(UUID accountId) {
+    return target
+            .path("accounts/")
+            .path(accountId.toString())
+            .path("/balance")
+            .request()
+            .method("GET");
+  }
 }

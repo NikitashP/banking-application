@@ -7,34 +7,29 @@ import java.util.concurrent.BlockingQueue;
 
 public class PaymentOrderQueue {
 
-    private final BlockingQueue<PaymentOrder> paymentOrderBlockingQueue;
+    private final BlockingQueue<AbstractPaymentOrder> paymentOrderBlockingQueue;
 
-    private final PaymentOrderProcessor paymentOrderProcessor;
-
-    public PaymentOrderQueue(PaymentOrderProcessor paymentOrderProcessor, BlockingQueue<PaymentOrder> paymentOrderBlockingQueue) {
-        this.paymentOrderProcessor = paymentOrderProcessor;
+    public PaymentOrderQueue(BlockingQueue<AbstractPaymentOrder> paymentOrderBlockingQueue) {
         this.paymentOrderBlockingQueue = paymentOrderBlockingQueue;
-        paymentOrderProcessor.start();
     }
 
-    public PaymentOrder getPaymentOrderFromQueue() {
-        PaymentOrder paymentOrder;
+    public AbstractPaymentOrder getPaymentOrderFromQueue() {
+        AbstractPaymentOrder paymentOrder;
         try {
             paymentOrder = paymentOrderBlockingQueue.take();
         } catch (InterruptedException ex) {
             throw new UnableToProcessPaymentOrderException();
         }
-
         return paymentOrder;
     }
 
-    public UUID putPaymentOrder(PaymentOrder paymentOrder) {
+    public UUID putPaymentOrder(AbstractPaymentOrder paymentOrder) {
         try {
             paymentOrderBlockingQueue.put(paymentOrder);
         } catch (InterruptedException ex) {
             throw new UnableToProcessPaymentOrderException();
         }
-        return UUID.randomUUID();
+        return paymentOrder.getId();
     }
 
 }

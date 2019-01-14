@@ -3,6 +3,8 @@ package com.banking.payment.repository;
 
 import com.banking.payment.service.PaymentService;
 
+import java.util.Objects;
+
 public class PaymentOrderProcessor extends Thread {
 
     private final PaymentService paymentService;
@@ -12,14 +14,17 @@ public class PaymentOrderProcessor extends Thread {
     public PaymentOrderProcessor(PaymentService paymentService, PaymentOrderQueue paymentOrderQueue) {
         this.paymentService = paymentService;
         this.paymentOrderQueue = paymentOrderQueue;
+        this.start();
     }
 
     @Override
     public void run() {
         for (; ; ) {
-            PaymentOrder paymentOrder = null;
+            AbstractPaymentOrder paymentOrder = null;
             paymentOrder = paymentOrderQueue.getPaymentOrderFromQueue();
-            paymentService.processPaymentOrder(paymentOrder);
+            if(Objects.nonNull(paymentOrder)){
+                paymentService.processPaymentOrder(paymentOrder);
+            }
         }
     }
 }

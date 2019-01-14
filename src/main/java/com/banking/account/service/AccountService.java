@@ -25,4 +25,16 @@ public class AccountService {
         }
         return accountRepository.getAccountBalance(accountId);
     }
+
+    public boolean isAccountPresent(UUID accountId) {
+        return accountRepository.isAccountPresent(accountId);
+    }
+
+    public void debitToAccountBalance(UUID accountId, BigDecimal amount) {
+        accountRepository.debitToAccountBalance(accountId,amount);
+    }
+
+    public void creditToAccountBalance(UUID accountId, BigDecimal amount) {
+        accountRepository.creditToAccountBalance(accountId,amount);
+    }
 }

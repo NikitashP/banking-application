@@ -23,4 +23,12 @@ public class AccountRepository {
     public boolean isAccountPresent(UUID accountID) {
         return accountsContainer.containsKey(accountID);
     }
+
+    public void debitToAccountBalance(UUID accountId, BigDecimal amount) {
+        accountsContainer.get(accountId).debit(amount);
+    }
+
+    public void creditToAccountBalance(UUID accountId, BigDecimal amount) {
+        accountsContainer.get(accountId).credit(amount);
+    }
 }

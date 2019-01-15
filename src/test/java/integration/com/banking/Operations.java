@@ -171,7 +171,7 @@ public class Operations {
 
     assertTrue(integer > 0);
 
-    Response fundTransferPaymentResponse = createFundTransferPayment(payeeAccountId, beneficiaryAccountId, 20);
+        Response fundTransferPaymentResponse = createFundTransferPayment(payeeAccountId, beneficiaryAccountId, 20);
 
     assertEquals(CREATED.getStatusCode(), fundTransferPaymentResponse.getStatus());
 
@@ -183,7 +183,6 @@ public class Operations {
 
         assertEquals("Initiated - Processed successfully", payment.getPayment().getMessage());
   }
-
 
   private UUID createAccount() {
     Response response = target.path("accounts/").request().method("POST");

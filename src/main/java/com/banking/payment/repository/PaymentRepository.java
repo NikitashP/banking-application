@@ -22,26 +22,20 @@ public class PaymentRepository {
   public UUID acceptFundTransferPaymentOrder(FundTransferPaymentOrder paymentOrder) {
         final Payment payment = new Payment("Initiated", PaymentStatus.PENDING);
         paymentOrder.setPayment(payment);
-    final UUID paymentOrderId = paymentOrderQueue.putPaymentOrder(paymentOrder);
 
-    paymentsContainer.put(
-            paymentOrderId,
-            paymentOrder);
-    return paymentOrderId;
+        paymentsContainer.put(paymentOrder.getId(), paymentOrder);
+        return paymentOrderQueue.putPaymentOrder(paymentOrder);
   }
 
   public UUID acceptDepositPaymentOrder(DepositPaymentOrder paymentOrder) {
 
         final Payment payment = new Payment("Initiated", PaymentStatus.PENDING);
         paymentOrder.setPayment(payment);
-      final UUID paymentOrderId = paymentOrderQueue.putPaymentOrder(paymentOrder);
-      paymentsContainer.put(
-            paymentOrderId,
-            paymentOrder);
-      return paymentOrderId;
+        paymentsContainer.put(paymentOrder.getId(), paymentOrder);
+        return paymentOrderQueue.putPaymentOrder(paymentOrder);
   }
 
-  public void processPaymentOrder(AbstractPaymentOrder paymentOrder, String message, PaymentStatus status) {
+    public void processPaymentOrder(AbstractPaymentOrder paymentOrder, String message, PaymentStatus status) {
     logger.info(String.format("Processing Payment Order %s", paymentOrder));
         getPayment(paymentOrder.getId()).getPayment().updateState(message, status);
   }
@@ -54,5 +48,4 @@ public class PaymentRepository {
     }
     return paymentsContainer.get(paymentId);
   }
-
 }

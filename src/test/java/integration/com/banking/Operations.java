@@ -184,6 +184,30 @@ public class Operations {
         assertEquals("Initiated - Processed successfully", payment.getPayment().getMessage());
   }
 
+    @Test
+    public void shouldRespondWithProperBalanceWhenPreviousPaymentsWereRejected() {
+
+        Response creditPaymentResponse = createCreditPayment(UUID.randomUUID(), 20);
+
+        UUID creditPaymentId = creditPaymentResponse.readEntity(UUID.class);
+
+        assertEquals(CREATED.getStatusCode(), creditPaymentResponse.getStatus());
+
+        PaymentTransferOrderClientResponse creditPayment = getPaymentInformation(creditPaymentId);
+
+        assertEquals(PaymentStatus.REJECTED, creditPayment.getPayment().getStatus());
+
+        UUID payeeAccountId = createAccount();
+
+        creditPaymentResponse = createCreditPayment(payeeAccountId, 20);
+
+        creditPaymentId = creditPaymentResponse.readEntity(UUID.class);
+
+        creditPayment = getPaymentInformation(creditPaymentId);
+
+        assertEquals(PaymentStatus.SUCCESS, creditPayment.getPayment().getStatus());
+
+    }
   private UUID createAccount() {
     Response response = target.path("accounts/").request().method("POST");
 

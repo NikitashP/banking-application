@@ -11,6 +11,10 @@ Simple banking application to Open Bank account and process payments
 - A separate thread picks up the payments from the Queue, validates them and then changes the status
 - the status of the payment can again be accessed by the API
 
+### Tests
+- Junits are in package: com.banking
+- Integration test are in package: integration.com.banking
+
 ### End Points
 
 #### 1. create account

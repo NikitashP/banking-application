@@ -4,7 +4,6 @@ import com.banking.account.service.AccountService;
 import com.banking.payment.repository.AbstractPaymentOrder;
 import com.banking.payment.repository.DepositPaymentOrder;
 import com.banking.payment.repository.FundTransferPaymentOrder;
-import com.banking.payment.repository.Payment;
 import com.banking.payment.repository.PaymentRepository;
 import com.banking.payment.repository.PaymentStatus;
 
@@ -117,7 +116,7 @@ public class PaymentService {
     return true;
   }
 
-  public Payment getPayment(UUID paymentId) {
+    public AbstractPaymentOrder getPayment(UUID paymentId) {
     return paymentRepository.getPayment(paymentId);
   }
 

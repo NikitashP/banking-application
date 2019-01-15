@@ -8,7 +8,23 @@ public class AbstractPaymentOrder {
   protected UUID beneficiaryAccountId;
   protected BigDecimal amount;
 
-  public AbstractPaymentOrder() {
+    public Payment getPayment() {
+        return payment;
+    }
+
+    public void setPayment(Payment payment) {
+        this.payment = payment;
+    }
+
+    protected Payment payment;
+
+    protected AbstractPaymentOrder() {
+        id = UUID.randomUUID();
+    }
+
+    protected AbstractPaymentOrder(UUID beneficiaryAccountId, BigDecimal amount) {
+        this.beneficiaryAccountId = beneficiaryAccountId;
+        this.amount = amount;
     id = UUID.randomUUID();
   }
 

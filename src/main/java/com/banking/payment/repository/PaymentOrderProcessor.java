@@ -19,12 +19,16 @@ public class PaymentOrderProcessor extends Thread {
 
     @Override
     public void run() {
-        for (; ; ) {
-            AbstractPaymentOrder paymentOrder = null;
-            paymentOrder = paymentOrderQueue.getPaymentOrderFromQueue();
-            if(Objects.nonNull(paymentOrder)){
-                paymentService.processPaymentOrder(paymentOrder);
-            }
+        while (true) {
+            extractAndProcessPaymentTransferOrder();
+        }
+    }
+
+    void extractAndProcessPaymentTransferOrder() {
+        AbstractPaymentOrder paymentOrder = null;
+        paymentOrder = paymentOrderQueue.getPaymentOrderFromQueue();
+        if (Objects.nonNull(paymentOrder)) {
+            paymentService.processPaymentOrder(paymentOrder);
         }
     }
 }

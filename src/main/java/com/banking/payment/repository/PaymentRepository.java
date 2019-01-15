@@ -11,7 +11,7 @@ public class PaymentRepository {
 
   Logger logger = Logger.getLogger(PaymentRepository.class.getName());
 
-  private final Map<UUID, Payment> paymentsContainer = new ConcurrentHashMap<UUID, Payment>();
+    private final Map<UUID, AbstractPaymentOrder> paymentsContainer = new ConcurrentHashMap<UUID, AbstractPaymentOrder>();
 
   private final PaymentOrderQueue paymentOrderQueue;
 
@@ -20,25 +20,33 @@ public class PaymentRepository {
   }
 
   public UUID acceptFundTransferPaymentOrder(FundTransferPaymentOrder paymentOrder) {
+        final Payment payment = new Payment("Initiated", PaymentStatus.PENDING);
+        paymentOrder.setPayment(payment);
     final UUID paymentOrderId = paymentOrderQueue.putPaymentOrder(paymentOrder);
+
     paymentsContainer.put(
-        paymentOrderId, new Payment(paymentOrder, "Initiated", PaymentStatus.PENDING));
+            paymentOrderId,
+            paymentOrder);
     return paymentOrderId;
   }
 
   public UUID acceptDepositPaymentOrder(DepositPaymentOrder paymentOrder) {
+
+        final Payment payment = new Payment("Initiated", PaymentStatus.PENDING);
+        paymentOrder.setPayment(payment);
       final UUID paymentOrderId = paymentOrderQueue.putPaymentOrder(paymentOrder);
       paymentsContainer.put(
-              paymentOrderId, new Payment(paymentOrder, "Initiated", PaymentStatus.PENDING));
+            paymentOrderId,
+            paymentOrder);
       return paymentOrderId;
   }
 
   public void processPaymentOrder(AbstractPaymentOrder paymentOrder, String message, PaymentStatus status) {
     logger.info(String.format("Processing Payment Order %s", paymentOrder));
-    paymentsContainer.get(paymentOrder.getId()).updateState(message, status);
+        getPayment(paymentOrder.getId()).getPayment().updateState(message, status);
   }
 
-  public Payment getPayment(UUID paymentId) {
+    public AbstractPaymentOrder getPayment(UUID paymentId) {
 
     if (!paymentsContainer.containsKey(paymentId)) {
       throw new InvalidPaymentException(

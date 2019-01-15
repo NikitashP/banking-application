@@ -1,6 +1,5 @@
 package com.banking.account.service;
 
-import com.banking.account.exception.AccountNotFoundException;
 import com.banking.account.repository.AccountRepository;
 
 import java.math.BigDecimal;
@@ -20,9 +19,6 @@ public class AccountService {
     }
 
     public BigDecimal getAccountBalance(UUID accountId) {
-        if (!accountRepository.isAccountPresent(accountId)) {
-            throw new AccountNotFoundException(accountId);
-        }
         return accountRepository.getAccountBalance(accountId);
     }
 

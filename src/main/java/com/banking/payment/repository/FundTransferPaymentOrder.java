@@ -21,17 +21,13 @@ public class FundTransferPaymentOrder extends AbstractPaymentOrder {
         super();
     }
 
-    FundTransferPaymentOrder(UUID payeeAccountId, UUID beneficiaryAccountId, BigDecimal amount) {
-        super();
+    public FundTransferPaymentOrder(UUID payeeAccountId, UUID beneficiaryAccountId, BigDecimal amount) {
+        super(beneficiaryAccountId, amount);
         this.payeeAccountId = payeeAccountId;
-        this.beneficiaryAccountId = beneficiaryAccountId;
-        this.amount = amount;
     }
 
     public UUID getPayeeAccountId() {
         return payeeAccountId;
     }
-
-
 
 }

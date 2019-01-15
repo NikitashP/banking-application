@@ -9,8 +9,8 @@ public class DepositPaymentOrder extends AbstractPaymentOrder {
         super();
     }
 
-    DepositPaymentOrder(UUID beneficiaryAccountId, BigDecimal amount) {
-        super();
+    public DepositPaymentOrder(UUID beneficiaryAccountId, BigDecimal amount) {
+        super(beneficiaryAccountId, amount);
         this.beneficiaryAccountId = beneficiaryAccountId;
         this.amount = amount;
     }

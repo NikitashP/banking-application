@@ -79,11 +79,11 @@ public class Operations {
 
     final UUID paymentOrderID = response.readEntity(UUID.class);
 
-    final PaymentClientResponse payment = getPaymentInformation(paymentOrderID);
+        final PaymentTransferOrderClientResponse payment = getPaymentInformation(paymentOrderID);
 
-    assertEquals(PaymentStatus.REJECTED, payment.getStatus());
+        assertEquals(PaymentStatus.REJECTED, payment.getPayment().getStatus());
 
-    assertEquals("Initiated - Payee account is Invalid",payment.getMessage());
+        assertEquals("Initiated - Payee account is Invalid", payment.getPayment().getMessage());
 
   }
 
@@ -98,11 +98,11 @@ public class Operations {
 
     final UUID paymentId = response.readEntity(UUID.class);
 
-    final PaymentClientResponse payment = getPaymentInformation(paymentId);
+        final PaymentTransferOrderClientResponse payment = getPaymentInformation(paymentId);
 
-    assertEquals(PaymentStatus.REJECTED, payment.getStatus());
+        assertEquals(PaymentStatus.REJECTED, payment.getPayment().getStatus());
 
-    assertEquals("Initiated - Beneficiary account is Invalid",payment.getMessage());
+        assertEquals("Initiated - Beneficiary account is Invalid", payment.getPayment().getMessage());
   }
 
   @Test
@@ -119,11 +119,11 @@ public class Operations {
 
     final UUID paymentId = response.readEntity(UUID.class);
 
-    final PaymentClientResponse payment = getPaymentInformation(paymentId);
+        final PaymentTransferOrderClientResponse payment = getPaymentInformation(paymentId);
 
-    assertEquals(PaymentStatus.REJECTED, payment.getStatus());
+        assertEquals(PaymentStatus.REJECTED, payment.getPayment().getStatus());
 
-    assertEquals("Initiated - Payment Order Declined, Insufficient Balance",payment.getMessage());
+        assertEquals("Initiated - Payment Order Declined, Insufficient Balance", payment.getPayment().getMessage());
   }
 
   @Test
@@ -139,11 +139,13 @@ public class Operations {
 
     final UUID paymentId = response.readEntity(UUID.class);
 
-    final PaymentClientResponse payment = getPaymentInformation(paymentId);
+        final PaymentTransferOrderClientResponse payment = getPaymentInformation(paymentId);
 
-    assertEquals(PaymentStatus.REJECTED, payment.getStatus());
+        assertEquals(PaymentStatus.REJECTED, payment.getPayment().getStatus());
 
-    assertEquals("Initiated - Payment Order Amount must be Positive and Greater than Zero",payment.getMessage());
+        assertEquals(
+            "Initiated - Payment Order Amount must be Positive and Greater than Zero",
+            payment.getPayment().getMessage());
   }
 
   @Test
@@ -159,9 +161,9 @@ public class Operations {
 
     assertEquals(CREATED.getStatusCode(), creditPaymentResponse.getStatus());
 
-    final PaymentClientResponse creditPayment = getPaymentInformation(creditPaymentId);
+        final PaymentTransferOrderClientResponse creditPayment = getPaymentInformation(creditPaymentId);
 
-    assertEquals(PaymentStatus.SUCCESS, creditPayment.getStatus());
+        assertEquals(PaymentStatus.SUCCESS, creditPayment.getPayment().getStatus());
 
     final Response accountBalanceResponse = getAccountBalance(payeeAccountId);
 
@@ -175,11 +177,11 @@ public class Operations {
 
     final UUID fundTransferPaymentId = fundTransferPaymentResponse.readEntity(UUID.class);
 
-    final PaymentClientResponse payment = getPaymentInformation(fundTransferPaymentId);
+        final PaymentTransferOrderClientResponse payment = getPaymentInformation(fundTransferPaymentId);
 
-    assertEquals(PaymentStatus.SUCCESS, payment.getStatus());
+        assertEquals(PaymentStatus.SUCCESS, payment.getPayment().getStatus());
 
-    assertEquals("Initiated - Processed successfully",payment.getMessage());
+        assertEquals("Initiated - Processed successfully", payment.getPayment().getMessage());
   }
 
 
@@ -190,12 +192,12 @@ public class Operations {
     return response.readEntity(UUID.class);
   }
 
-  private PaymentClientResponse getPaymentInformation(UUID paymentOrderID) {
+    private PaymentTransferOrderClientResponse getPaymentInformation(UUID paymentOrderID) {
     Response response;
     response = target.path("payments/").path(paymentOrderID.toString()).request().get();
     assertEquals(OK.getStatusCode(), response.getStatus());
 
-    return response.readEntity(PaymentClientResponse.class);
+        return response.readEntity(PaymentTransferOrderClientResponse.class);
   }
 
   private Response createFundTransferPayment(UUID payeeAccountId, UUID beneficiaryAccountId, int amount) {
